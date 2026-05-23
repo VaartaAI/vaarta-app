@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, Image, ScrollView,
   TouchableOpacity, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useStory } from '../hooks/useStory';
+import { addBookmark, removeBookmark, fetchBookmarkIds } from '../services/api';
 import { timeAgo, catColor, faviconPalette, formatCategory } from '../utils/helpers';
 import { colors } from '../utils/theme';
 
@@ -32,6 +34,25 @@ export default function StoryDetailScreen() {
   const { params } = useRoute();
   const insets = useSafeAreaInsets();
   const { story, loading, error } = useStory(params?.clusterId);
+  const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    if (!params?.clusterId) return;
+    fetchBookmarkIds()
+      .then(r => setBookmarked((r?.cluster_ids || []).includes(params.clusterId)))
+      .catch(() => {});
+  }, [params?.clusterId]);
+
+  const toggleBookmark = async () => {
+    const next = !bookmarked;
+    setBookmarked(next);  // optimistic
+    try {
+      if (next) await addBookmark(params.clusterId);
+      else      await removeBookmark(params.clusterId);
+    } catch {
+      setBookmarked(!next);
+    }
+  };
 
   if (loading) {
     return (
@@ -77,6 +98,19 @@ export default function StoryDetailScreen() {
             activeOpacity={0.75}
           >
             <Text style={styles.backArrow}>‹</Text>
+          </TouchableOpacity>
+
+          {/* bookmark button */}
+          <TouchableOpacity
+            style={[styles.bookmarkBtn, { top: insets.top + 14 }]}
+            onPress={toggleBookmark}
+            activeOpacity={0.75}
+          >
+            <Icon
+              name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+              size={20}
+              color={bookmarked ? colors.saffron : '#fff'}
+            />
           </TouchableOpacity>
 
           {/* category + time pinned to bottom of hero */}
@@ -227,6 +261,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backArrow: { color: '#fff', fontSize: 30, lineHeight: 34, marginTop: -2, marginLeft: -1 },
+  bookmarkBtn: {
+    position: 'absolute',
+    right: 16,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   heroMeta: {
     position: 'absolute',

@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
+import { AuthProvider } from './src/contexts/AuthContext';
+import WelcomeOverlay from './src/components/WelcomeOverlay';
 
 const { width } = Dimensions.get('screen');
 
@@ -66,7 +68,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#0a0a0c" translucent={false} />
-      <AppNavigator />
+      <AuthProvider>
+        <AppNavigator />
+        <WelcomeOverlay />
+      </AuthProvider>
       {splashVisible && (
         <Animated.View style={[styles.overlay, { opacity }]}>
           <SplashScreen onDismiss={dismissSplash} />
